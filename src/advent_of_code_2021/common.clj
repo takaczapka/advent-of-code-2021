@@ -6,3 +6,6 @@
   (-> (io/resource file)
       slurp
       (str/split #"\n")))
+
+(defn rotate [vs]
+  (apply map vector vs))

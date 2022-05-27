@@ -3,9 +3,6 @@
             [clojure.test :refer :all]
             [advent-of-code-2021.common :as common]))
 
-(defn rotate [vs]
-  (apply map vector vs))
-
 (defn the-most-common [v]
   (if (< (* (count (filter #(= \1 %) v)) 2) (count v))
     \0
@@ -26,7 +23,7 @@
   (occurrences v default :least))
 
 (defn calc-gamma-rate [vs]
-  (->> (rotate vs)
+  (->> (common/rotate vs)
        (map #(the-most-common %))
        str/join))
 
@@ -44,10 +41,10 @@
 
 ; oxygen generator rating
 (defn most-common-at-pos-or [vs n]
-  (most-common (nth (rotate vs) n) \1))
+  (most-common (nth (common/rotate vs) n) \1))
 
 (defn least-common-at-pos-or [vs n]
-  (least-common (nth (rotate vs) n) \0))
+  (least-common (nth (common/rotate vs) n) \0))
 
 (defn filter-by-occs [occurrences-f pos cs]
   (if (or (= (count cs) 1) (= pos (count (first cs))))
