@@ -1,22 +1,30 @@
 (ns advent-of-code-2021.1
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]))
+  (:require [advent-of-code-2021.common :as common]
+            [clojure.test :refer :all]))
 
-
-(defn ac-1 [m]
+(defn ac-1-1 [m]
   (->> m
        (partition 2 1)
-       (filter (fn [[a b]] (< a b)))
+       (filter #(< (first %) (second %)))
        count))
 
-(defn read-input [file]
-  (->
-    (io/resource file)
-    (slurp)
-    (str/split #"\n")))
+(defn ac-1-2 [m]
+  (->> m
+       (partition 3 1)
+       (map (partial apply +))
+       (partition 2 1)
+       (filter #(< (first %) (second %)))
+       count))
 
-(comment
-  (->> (read-input "1.txt")
-       (map #(Integer/parseInt %))
-       (ac-1)))
+(deftest a-1-1-test
+  (is (= 1301)
+      (->> (common/read-input "1.txt")
+           (map #(parse-long %))
+           (ac-1-1))))
+
+(deftest a-1-2-test
+  (is (= 1346)
+      (->> (common/read-input "1.txt")
+           (map #(parse-long %))
+           (ac-1-2))))
 
