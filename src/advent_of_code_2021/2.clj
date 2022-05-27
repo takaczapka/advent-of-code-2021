@@ -1,40 +1,34 @@
 (ns advent-of-code-2021.2
-  (:require [clojure.java.io :as io]
+  (:require [advent-of-code-2021.common :as common]
+            [clojure.test :refer :all]
             [clojure.string :as str]))
 
 
-(defn ac-2 [input]
 
+(defn ac-2 [input]
   (let [{:keys [forward depth]}
-        (reduce (fn [{:keys [forward depth aim] :as acc} n]
-                  (let [[dir p] (str/split n #" ")
-                        step (Integer/parseInt p)]
-                    (case dir
-                      "forward" (assoc acc :forward (+ forward step) :depth (+ depth (* aim step)))
-                      "up" (assoc acc :aim (- aim step))
-                      "down" (assoc acc :aim (+ aim step))
-                      )))
+        (reduce (fn [{:keys [aim] :as acc} n]
+                  (let [[direction p] (str/split n #" ")
+                        step (parse-long p)]
+                    (case direction
+                      "forward" (-> acc
+                                    (update :forward + step)
+                                    (update :depth + (* aim step)))
+                      "up" (update acc :aim - step)
+                      "down" (update acc :aim + step))))
                 {:forward 0 :depth 0 :aim 0}
                 input)]
     (* forward depth)))
 
-(defn read-input [file]
-  (->
-    (io/resource file)
-    (slurp)
-    (str/split #"\n")))
+(deftest ac-2-test
+  (is (= 1840311528
+         (->> (common/read-input "2.txt")
+              (ac-2))))
 
-(comment
-  (->> (read-input "2.txt")
-       (ac-2))
-
-
-  (ac-2 ["forward 5"
-         "down 5"
-         "forward 8"
-         "up 3"
-         "down 8"
-         "forward 2"])
-
-  )
-
+  (is (= 900
+         (ac-2 ["forward 5"
+                "down 5"
+                "forward 8"
+                "up 3"
+                "down 8"
+                "forward 2"]))))
