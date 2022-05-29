@@ -2,11 +2,9 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.set :as set]
-            [clojure.pprint :refer [pprint]]
-            [clojure.zip :as zip]))
+            [clojure.pprint :refer [pprint]]))
 
-(defn read-input [file]
+(defn read-normalise-input [file]
   (let [ls (->
              (io/resource file)
              (slurp)
@@ -32,16 +30,14 @@
     (and (some? a) (:sig a)))
   )
 
-;;;; part 2
-(defn bbb [[x1 x2] [x3 x4]]
+;;;; part 1
+(defn intersection [[x1 x2] [x3 x4]]
   (if (some? x1)
     [(min x1 x3) (max x2 x4)]
     [x3 x4]))
 
 (defn is-contained [[x1 x2] [x3 x4]]
   (and (>= x1 x3) (<= x2 x4)))
-
-
 
 (defn aasd [[x1 x2] [x3 x4]]
   (cond
@@ -50,42 +46,32 @@
     (sorted? [x1 x3 x4 x2]) [x1 x2]
     (sorted? [x3 x1 x4 x2]) [x4 x2]
     (sorted? [x3 x4 x1 x2]) [x1 x2]
-    (sorted? [x3 x1 x2 x4]) (do (prn :what?)
-                                [0 0])))
-
-
+    (sorted? [x3 x1 x2 x4]) [0 0]))
 
 (defn do-magic [[x1 y1 z1] [x2 y2 z2]]
-  (let [res (cond
-              (and (is-contained y1 y2) (is-contained z1 z2)) [(aasd x1 x2) y1 z1]
-              (and (is-contained x1 x2) (is-contained z1 z2)) [x1 (aasd y1 y2) z1]
-              (and (is-contained x1 x2) (is-contained y1 y2)) [x1 y1 (aasd z1 z2)]
-              :else [x1 y1 z1])]
-    (prn :acc [x1 y1 z1])
-    (prn :step [x2 y2 z2])
-    (prn :res res)
-    res))
+  (cond
+    (and (is-contained y1 y2) (is-contained z1 z2)) [(aasd x1 x2) y1 z1]
+    (and (is-contained x1 x2) (is-contained z1 z2)) [x1 (aasd y1 y2) z1]
+    (and (is-contained x1 x2) (is-contained y1 y2)) [x1 y1 (aasd z1 z2)]
+    :else [x1 y1 z1]))
 
 (defn find-boundaries [ss]
   (reduce (fn [[x' y' z'] {:keys [sig x y z]}]
             (if sig
-              [(bbb x' x) (bbb y' y) (bbb z' z)]
-              (do-magic [x' y' z'] [x y z])
-              ;[x' y' z']
-              ))
+              [(intersection x' x) (intersection y' y) (intersection z' z)]
+              (do-magic [x' y' z'] [x y z])))
           []
           ss))
 
-(defn do-naive-little-better [steps]
+(defn aoc-22-1 [steps]
   (let [[[x1 x2] [y1 y2] [z1 z2]] (find-boundaries steps)
-        _   (prn :bdrs [[x1 x2] [y1 y2] [z1 z2]])
         res (for [x (range (dec x1) (inc x2))
                   y (range (dec y1) (inc y2))
                   z (range (dec z1) (inc z2))]
               (is-on [x y z] steps))]
     (count (filter true? res))))
 
-
+; part 2
 (defn isect? [[a-x1 a-x2] [b-x1 b-x2]]
   (or
     (and (>= a-x1 b-x1) (<= a-x1 b-x2))
@@ -93,9 +79,7 @@
     (and (<= a-x1 b-x1) (>= a-x2 b-x2))))
 
 (defn intersects? [c1 c2]
-
-  (every? true? (map isect? c1 c2))
-  )
+  (every? true? (map isect? c1 c2)))
 
 (defn is-valid [[[x1 x2] [y1 y2] [z1 z2]]]
   (and (<= x1 x2) (<= y1 y2) (<= z1 z2)))
@@ -135,62 +119,49 @@
     [c2]))
 
 (defn diff [c1 c2]
-  (filter-valid (concat (diff-x c1 c2)
-                        (diff-y c1 c2)
-                        (diff-z c1 c2)
-                        )))
+  (filter-valid (concat
+                  (diff-x c1 c2)
+                  (diff-y c1 c2)
+                  (diff-z c1 c2))))
 
 (defn diff-all [cs c]
   (mapcat #(diff c %) cs))
 
-(defn diff-onllyy [cs new-addition sig]
+(defn find-diffs [cs new-addition]
   (set (reduce (fn [acc n]
                  (set (diff-all acc n)))
                [new-addition]
                cs)))
 
 (defn calc-area [[[x1 x2] [y1 y2] [z1 z2]]]
-  (* (inc (- x2 x1)) (inc (- y2 y1)) (inc (- z2 z1)))
-  )
+  (* (inc (- x2 x1)) (inc (- y2 y1)) (inc (- z2 z1))))
 
 (defn calc-areas [cs]
-  ;(prn :calc-cs cs)
-  ;(prn :calc-res (apply + (map calc-area cs)))
   (apply + (map calc-area cs)))
 
-(defn do-it-good [is]
-  (let [ris     (reverse is)
-        sig (:sig (first ris))
-        first-c (if sig
-                  (calc-areas [[(:x (first ris)) (:y (first ris)) (:z (first ris))]])
-                  0)]
+(defn aoc-22-2 [is]
+  (let [input             (reverse is)
+        sig               (:sig (first input))
+        initial-area-size (if sig
+                            (calc-areas [[(:x (first input)) (:y (first input)) (:z (first input))]])
+                            0)]
 
-    (reduce (fn [{:keys [aaa bbb]} {:keys [sig x y z]}]
-              (let [
-                    ;_      (prn :sig sig)
-                    ;_      (prn :accnn [x y z])
-                    ;_      (prn :acc acc)
-                    d-only (diff-onllyy bbb [x y z] sig)
-                    ;_      (prn :d-only d-only)
-                    a      (if sig
-                             (calc-areas d-only))
-                    ]
-                {:aaa (if a (+ a aaa) aaa) :bbb (concat bbb d-only)})
-              )
-            {:aaa first-c
-             :bbb [[(:x (first ris)) (:y (first ris)) (:z (first ris))]]}
-            (rest ris)
-
-            ))
-  )
+    (:area-size
+      (reduce (fn [{:keys [area-size unique-blocks-turned-on]} {:keys [sig x y z]}]
+                (let [
+                      new-blocks         (find-diffs unique-blocks-turned-on [x y z])
+                      new-additions-size (when sig (calc-areas new-blocks))]
+                  {:area-size               (if new-additions-size
+                                              (+ new-additions-size area-size)
+                                              area-size)
+                   :unique-blocks-turned-on (concat unique-blocks-turned-on new-blocks)})
+                )
+              {:area-size               initial-area-size
+               :unique-blocks-turned-on [[(:x (first input)) (:y (first input)) (:z (first input))]]}
+              (rest input)))))
 
 (deftest aoc-21-2
 
-  (diff [[10 10] [10 10] [10 10]] [[9 11] [9 11] [9 11]])
-  ;(diff [[9 11] [9 11] [9 11]] [[10 10] [10 10] [10 10]] )
-
-  ;(prn :xxxx (diff-after-shave [[] [16 20] [0 10] [0 10]]))
-  ;;
   (is (= [[[0 4] [0 10] [0 10]] [[16 20] [0 10] [0 10]]]
          (diff [[5 15] [0 10] [0 10]] [[0 20] [0 10] [0 10]])))
   (is (= (list)
@@ -201,73 +172,31 @@
 
   (is (= [[[0 10] [0 10] [0 4]] [[0 10] [0 10] [16 20]]]
          (diff [[0 10] [0 10] [5 15]] [[0 10] [0 10] [0 20]])))
-  ;
-  ;
-  (is (= [[[0 20] [-2 -1] [0 10]]
-          [[0 20] [11 12] [0 10]]
-          [[0 4] [-2 12] [0 10]]
-          [[16 20] [-2 12] [0 10]]]
-         (diff [[5 15] [0 10] [0 10]] [[0 20] [-2 12] [0 10]])))
+  (is (intersects? [[0 10] [0 10] [0 10]] [[0 10] [9 25] [9 25]]))
+  (is (intersects? [[0 10] [0 10] [0 10]] [[0 10] [10 25] [9 25]]))
+  (is (intersects? [[0 10] [0 10] [0 10]] [[10 11] [10 25] [10 25]]))
+  (is (false? (intersects? [[0 10] [0 10] [0 10]] [[0 10] [20 25] [20 25]])))
+  (is (false? (intersects? [[0 10] [20 25] [20 25]] [[0 10] [0 10] [0 10]])))
+  (is (false? (intersects? [[0 10] [0 10] [0 10]] [[10 10] [20 25] [20 25]])))
+  (is (false? (intersects? [[0 10] [0 10] [0 10]] [[10 10] [20 25] [20 25]])))
+  (is (false? (intersects? [[0 10] [0 10] [0 10]] [[20 21] [20 21] [20 21]])))
 
-  ;(prn :ccc (diff [[5 15] [0 10] [0 10]] [[0 20] [0 12] [0 10]]))
-  ;(prn :ccc (diff [[5 15] [0 10] [0 10]] [[0 20] [0 12] [-5 15]]))
-  ;(prn :ccc (diff-after-shave (diff [[5 15] [0 10] [0 10]] [[0 20] [0 12] [-5 15]])))
+  ; part 1
+  (is (= 39 (aoc-22-1 (read-normalise-input "22-1.txt"))))
+  (is (= 590784 (aoc-22-1 (read-normalise-input "22-2.txt"))))
+  (is (= 606484 (aoc-22-1 (read-normalise-input "22-3.txt"))))
 
-  ;(prn :ccc  (diff [[5 15] [0 10] [0 10]] [[0 20] [-2 12] [-5 15]]))
+  ; part 2
+  (is (= 39
+         (aoc-22-2 (read-normalise-input "22-1.txt"))))
+  (is (= 590784)
+      (aoc-22-2 (read-normalise-input "22-2.txt")))
+  (is (= 606484
+         (aoc-22-2 (read-normalise-input "22-3.txt"))))
 
-  ;
-  ;
-  ;
-  ;(is (intersects? [[0 10] [0 10] [0 10]] [[0 10] [9 25] [9 25]]))
-  ;(is (intersects? [[0 10] [0 10] [0 10]] [[0 10] [10 25] [9 25]]))
-  ;(is (intersects? [[0 10] [0 10] [0 10]] [[10 11] [10 25] [10 25]]))
-  ;(is (false? (intersects? [[0 10] [0 10] [0 10]] [[0 10] [20 25] [20 25]])))
-  ;(is (false? (intersects? [[0 10] [20 25] [20 25]] [[0 10] [0 10] [0 10]])))
-  ;(is (false? (intersects? [[0 10] [0 10] [0 10]] [[10 10] [20 25] [20 25]])))
-  ;(is (false? (intersects? [[0 10] [0 10] [0 10]] [[10 10] [20 25] [20 25]])))
-  ;(is (false? (intersects? [[0 10] [0 10] [0 10]] [[20 21] [20 21] [20 21]])))
-  ;
+  (is (= 2758514936282235
+         (aoc-22-2 (read-normalise-input "22-5.txt"))))
 
-  ;(is (= 39 (do-naive-little-better (read-input "22-1.txt"))))
-  ;
-  ;(is (= 590784 (do-naive-little-better (read-input "22-2.txt"))))
-  ;;;
-  ;(is (= 606484 (do-naive-little-better (read-input "22-3.txt"))))
-
-  (prn :iii
-       (:aaa (do-it-good (read-input "22-1.txt"))))
-  (prn :iii
-       (:aaa (do-it-good (read-input "22-2.txt"))))
-  (prn :iii
-       (:aaa (do-it-good (read-input "22-3.txt"))))
-
-  (prn :iii
-       (:aaa (do-it-good (read-input "22-5.txt"))))
-
-  (prn :iii
-       (:aaa (do-it-good (read-input "22-4.txt"))))
-  ; not 3368686838866479
-  ; not 1166930839851764
-
-  ;
-  ;(prn :aas (diff-after-shave (diff [[10 10] [10 10] [10 10]] [[9 11] [9 11] [9 11]])))
-  ;;(prn :aas (diff-after-shave (diff-after-shave (diff [[9 11] [9 11] [9 11]] [[11 13] [11 13] [11 13]] ))))
-  ;(prn :aas (diff [[11 13] [11 13] [11 13]] [[10 12] [10 12] [10 12]]))
-  ;;(prn :aas (diff-after-shave (diff [[11 13] [11 13] [11 13]] [[10 12] [10 12] [10 12]])))
-  ;
-  ;(prn :aaaa (diff [[13 13] [11 13] [11 13]] [[11 13] [13 13] [11 13]]))
-  ;(prn :aaaa (diff [[11 13] [13 13] [11 13]] [[13 13] [11 13] [11 13]]))
-
-  ;(prn :xxx (calc-area [[10 12] [10 12] [10 12]]))
-  ;(intersects? [[9 10] [9 11] [9 11]] [[9 10] [9 11] [9 10]])
-
-  )
-
-;(is (= [[[0 15] [-5 15] [-5 12]]]
-;      (make-cubes [[[0 10] [0 10] [0 10]]] {:sig true [0 15] [-5 15] [-5 12]})))
-
-;(let [steps (read-input "22-4.txt")]
-;
-;
-;  )
+  (is (= 1162571910364852
+         (aoc-22-2 (read-normalise-input "22-4.txt")))))
 
