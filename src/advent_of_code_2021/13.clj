@@ -1,9 +1,7 @@
 (ns advent-of-code-2021.13
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.pprint :as pprint]
-            [clojure.set :as set]))
+            [clojure.string :as str]))
 
 (defn rotate [vs]
   (apply map vector vs))
@@ -23,7 +21,7 @@
                           [(keyword x) (Integer/parseInt y)])) aa)]
     bb))
 
-(defn read-input [file]
+(defn read-normalise-input [file]
   (let [[a b] (->
                 (io/resource file)
                 (slurp)
@@ -38,47 +36,45 @@
          (if (or (= a \#) (= b \#))
            \#
            \.)
-         ) r1 r2)
-
-  )
+         )
+       r1
+       r2))
 
 (defn fold-y [board]
   (let [ys (quot (count board) 2)
         [p1 p2] (split-at ys board)]
     (map (fn [a b]
-                 (merge-me a b))
-           p1 (reverse p2))))
+           (merge-me a b))
+         p1 (reverse p2))))
 
 (defn fold-x [board]
   (rotate (fold-y (rotate board))))
 
-(defn do-fold [board moves]
-  (reduce (fn [acc [k v]]
+(defn count-dots [b]
+  (count (filter #(= \# %) (flatten b))))
+
+(defn aoc-13-1 [board]
+  (count-dots (fold-x board)))
+
+(defn aoc-13-2 [board moves]
+  (reduce (fn [acc [k _]]
             (if (= :x k)
               (fold-x acc)
               (fold-y acc)))
           board
-          moves)
-  )
-
-(defn count-dots [b]
-  (count (filter #(= \# %) (flatten b))))
+          moves))
 
 (deftest aoc-13
-  (let [[board moves] (read-input "13.txt")
-        ;_ (pprint/pprint board)
-        ;_ (pprint/pprint (rotate (rotate board)))
-        ;_ (pprint/pprint moves)
-        ;
-        ;res (fold-x board)
-        ;_ (prn (count-dots res))
-        _ (pprint/pprint (map #(str/join %) (do-fold board moves)))
-        ;res (do-fold board moves)
-        ;_ (pprint/pprint res)
-        ;_ (prn (count (filter #(= \# %) (flatten res))))
-        ]
+  (let [[board moves] (read-normalise-input "13.txt")]
 
-    )
-  )
+    (is (= 747 (aoc-13-1 board)))
+
+    (is (= '(".##..###..#..#.####.###...##..#..#.#..#."
+              "#..#.#..#.#..#....#.#..#.#..#.#..#.#..#."
+              "#..#.#..#.####...#..#..#.#....#..#.####."
+              "####.###..#..#..#...###..#....#..#.#..#."
+              "#..#.#.#..#..#.#....#....#..#.#..#.#..#."
+              "#..#.#..#.#..#.####.#.....##...##..#..#.")
+           (map #(str/join %) (aoc-13-2 board moves))))))
 
 
