@@ -1,20 +1,7 @@
 (ns advent-of-code-2021.10
   (:require [clojure.test :refer :all]
-            [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.set :as set]))
-
-(def opening #{\< \[ \{ \(})
-(def closing #{\> \] \} \)})
-
-
-(defn read-input [file]
-  (->
-    (io/resource file)
-    (slurp)
-    (str/split #"\n")))
-
-
+            [advent-of-code-2021.common :as common]))
 
 (def opening #{"<" "[" "{" "("})
 (def closing #{">" "]" "}" ")"})
@@ -27,75 +14,64 @@
 (defn good-or-break [line]
   (let [a (reduce (fn [acc n]
                     (cond
-                      (some #{n} opening) (conj acc n)
-                      (and (some #{n} closing) (= (get m (first acc)) n)) (rest acc)
-                      :else (reduced {:boom n})))
+                      (opening n) (conj acc n)
+                      (and (closing n) (= n (get m (first acc)))) (rest acc)
+                      :else (reduced {:found n})))
                   '() (str/split line #""))]
     (when (map? a)
-      (:boom a))))
-
+      (:found a))))
 
 (defn good-or-fill [line]
   (let [a (reduce (fn [acc n]
                     (cond
-                      (some #{n} opening) (conj acc n)
-                      (and (some #{n} closing) (= (get m (first acc)) n)) (rest acc)
-                      :else (reduced {:boom n})
-                      ))
+                      (opening n) (conj acc n)
+                      (and (closing n) (= n (get m (first acc)))) (rest acc)
+                      :else (reduced :not-found)))
                   '() (str/split line #""))]
     (when (seq? a)
       (map m a))))
 
-(def points {
-             "}" 1197
-             ")" 3
-             "]" 57
-              ">" 25137
-             })
+(defn aoc-10-1 [i]
+  (let [calc-points (fn [ls]
+                      (apply + (map (fn [[k v]] (* v k)) (frequencies ls))))]
+    (->> i
+         (map good-or-break)
+         (remove nil?)
+         (map {"}" 1197
+               ")" 3
+               "]" 57
+               ">" 25137})
+         calc-points)))
 
-(def points-2 {
-             "}" 3
-             ")" 1
-             "]" 2
-             ">" 4
-             })
-
-(defn calc-points [ls]
-  (reduce (fn [acc l]
-            (+ (* acc 5) l)
-            )
-          0 ls))
+(defn aoc-10-2 [i]
+  (let [points      {"}" 3
+                     ")" 1
+                     "]" 2
+                     ">" 4}
+        calc-points (fn [ls]
+                      (reduce (fn [acc l]
+                                (+ (* acc 5) l))
+                              0 ls))
+        res         (->> i
+                         (map good-or-fill)
+                         (remove nil?)
+                         (map #(map points %))
+                         (map calc-points)
+                         sort)]
+    (nth res (quot (count res) 2))))
 
 (deftest aoc-10
+  (is (= 26397 (aoc-10-1 ["[({(<(())[]>[[{[]{<()<>>"
+                          "[(()[<>])]({[<{<<[]>>("
+                          "{([(<{}[<>[]}>{[]{[(<()>"
+                          "(((({<>}<{<{<>}{[]{[]{}"
+                          "[[<[([]))<([[{}[[()]]]"
+                          "[{[{({}]{}}([{[{{{}}([]"
+                          "{<[[]]>}<{[{[{[]{()[[[]"
+                          "[<(<(<(<{}))><([]([]()"
+                          "<{([([[(<>()){}]>(<<{{"
+                          "<{([{{}}[<[[[<>{}]]]>[]]"])))
 
-
-  (let [
-        i [
-           "[({(<(())[]>[[{[]{<()<>>"
-           "[(()[<>])]({[<{<<[]>>("
-           "{([(<{}[<>[]}>{[]{[(<()>"
-           "(((({<>}<{<{<>}{[]{[]{}"
-           "[[<[([]))<([[{}[[()]]]"
-           "[{[{({}]{}}([{[{{{}}([]"
-           "{<[[]]>}<{[{[{[]{()[[[]"
-           "[<(<(<(<{}))><([]([]()"
-           "<{([([[(<>()){}]>(<<{{"
-           "<{([{{}}[<[[[<>{}]]]>[]]"
-           ]
-        i (read-input  "10.txt")
-        ;_ (prn i)
-        ]
-    (let [ress
-          (->>
-            (map good-or-fill i)
-            (remove nil?)
-            (map (fn [l] (map points-2 l)))
-            (map calc-points)
-            sort
-            )
-          ]
-      (prn ress)
-      (prn (nth ress (quot (count ress) 2)))
-      ))
-
-  )
+  (let [i-2 (common/read-input "10.txt")]
+    (is (= 240123 (aoc-10-1 i-2)))
+    (is (= 3260812321 (aoc-10-2 i-2)))))
