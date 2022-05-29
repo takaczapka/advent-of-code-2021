@@ -1,8 +1,7 @@
 (ns advent-of-code-2021.11
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.set :as set]))
+            [clojure.string :as str]))
 
 (defn read-input [file]
   (vec (map #(vec (map (fn [c] (- (int c) 48)) (vec %)))
@@ -18,7 +17,6 @@
       i)))
 
 (defn neigh [x y]
-
   [[(inc x) (inc y)]
    [x (inc y)]
    [(dec x) (inc y)]
@@ -27,7 +25,6 @@
    [x (dec y)]
    [(dec x) (dec y)]
    [(dec x) y]])
-
 
 (defn burst [i bs]
   (reduce (fn [i' b]
@@ -41,39 +38,40 @@
 (defn init [i]
   (to-vec (map #(map inc %) i)))
 
-(defn one-go [i]
-  (let [
-        b  (for [x (range 0 (count (first i)))
-                 y (range 0 (count i))
-                 :let [flashing [x y]
-                       v        (get-in i [y x])]
-                 :when (and (number? v) (< 9 v))]
-             flashing)
+(defn step [i]
+  (let [b   (for [x (range 0 (count (first i)))
+                  y (range 0 (count i))
+                  :let [flashing [x y]
+                        v        (get-in i [y x])]
+                  :when (and (number? v) (< 9 v))]
+              flashing)
         i-x (reduce (fn [acc bb]
-                      (assoc-in acc (reverse bb) :x)
-                      ) i b)]
+                      (assoc-in acc (reverse bb) :x)) i b)]
     (if (empty? b)
       i-x
-      (one-go (burst i-x b))
-      )))
+      (step (burst i-x b)))))
 
 (defn generation [i]
-  (let [r (one-go (init i))]
+  (let [r (step (init i))]
     [
      (map (fn [ls] (map #(if (= % :x) 0 %) ls)) r)
      (count (filter #(= :x %) (flatten r)))])
   )
 
+(defn aoc-11-1 [i]
+  (let [calc (iterate (fn [a] (generation (first a))) [i 0])
+        res  (take 101 calc)]
+    (apply + (map second res))))
+
+(defn aoc-11-2 [i]
+  (let [calc (iterate (fn [a] (generation (first a))) [i 0])]
+    (->> calc
+         (map-indexed (fn [idx c] [idx c]))
+         (filter #(= (second (second %)) 100))
+         first
+         first)))
 
 (deftest aoc-11
-  (let [i (read-input "11.txt")
-        calc (iterate (fn [a] (generation (first a))) [i 0])
-        res (take 101 calc)]
-    (prn (apply + (map second res )))
-
-    (prn (first (filter #(= (second (second %)) 100) (map-indexed (fn [idx c] [idx c]) calc))))
-
-    ;(prn (one-go ))
-    )
-
-  )
+  (let [i (read-input "11.txt")]
+    (is (= 1644 (aoc-11-1 i)))
+    (is (= 229 (aoc-11-2 i)))))
