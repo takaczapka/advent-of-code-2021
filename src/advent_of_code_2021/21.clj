@@ -2,9 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.set :as set]
-            [clojure.pprint :refer [pprint]]
-            [clojure.zip :as zip]))
+            [clojure.pprint :refer [pprint]]))
 
 (defn read-input [file]
   (let [[alg img]
@@ -63,7 +61,7 @@
   (let [[player-1 player-2] players]
     (or (<= max-score (:score player-1)) (<= max-score (:score player-2)))))
 
-(defn score [{:keys [players boost]}]
+(defn score [{:keys [players]}]
   (let [[player-1 player-2] players]
     (if (> (:score player-1) (:score player-2)) [1 0] [0 1])))
 
@@ -79,19 +77,13 @@
 (defn next-movex [{:keys [pos score]} roll]
   {:pos (step pos roll) :score (+ score (step pos roll))})
 
-(defn next-game [{:keys [next-player players boost depth] :as game} step]
+(defn next-game [{:keys [next-player players] :as game} step]
   (let [player  (get players next-player)
         player' (next-movex player step)]
-    (merge game {:next-player (mod (inc next-player) 2) :players (assoc players next-player player')
-                 ;:boost       (if (= boost 0) n-boost (* boost n-boost))
-                 ;:depth (inc depth)
-                 })))
+    (merge game {:next-player (mod (inc next-player) 2) :players (assoc players next-player player')})))
 
 (defn calc-score-so-far [vs]
   (apply map + vs))
-
-(defn times-boost [rs boost]
-  (map (fn [[a b]] [(* boost a) (* boost b)]) rs))
 
 (def m-rplay (memoize rplay))
 
@@ -102,24 +94,16 @@
 
 (def m-rplay (memoize rplay))
 
+(deftest aoc-21-1
+  (is (= 855624 (boom 4 10 1000)))                               ; p2 wins
+  (is (= 739785 (boom 4 8 1000)))                                ; p1 wins
+  )
+
 (deftest aoc-21-2
   (let [p1-start 4
         p2-start 10]
-    (prn (rplay {:max-score   21
-                 :depth       0
-                 :next-player 0
-                 :boost       1
-                 :players     [{:pos p1-start :score 0} {:pos p2-start :score 0}]}))))
-
-; (127019 152976)
-; (392 281)
-
-;341960390180808
-;(* 3 3151502992942)
-;3045395899116
-
-
-;(deftest aoc-21
-;  (is (= 855624 (boom 4 10 1000)))                               ; p2 wins
-;  (is (= 739785 (boom 4 8 1000)))                                ; p1 wins
-;)
+    (is (= 187451244607486 (first (rplay {:max-score   21
+                                          :depth       0
+                                          :next-player 0
+                                          :boost       1
+                                          :players     [{:pos p1-start :score 0} {:pos p2-start :score 0}]}))))))
