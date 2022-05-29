@@ -21,8 +21,7 @@
       (< p up)
       (< p down)
       (< p left)
-      (< p right)
-      )))
+      (< p right))))
 
 (defn find-low [i]
   (for [x (range 0 (count (first i)))
@@ -31,40 +30,30 @@
         :when (is-low i x y)]
     p))
 
-
 (defn is-good [i x y]
   (let [p (get-in i [y x])]
     (and (some? p) (not= p 9))))
 
 (defn next-gen [i xs]
-  (let [n (mapcat (fn [[x y]]
-                 [[x (dec y)] [x (inc y)] [(dec x) y] [(inc x) y]]) xs)
+  (let [n   (mapcat (fn [[x y]]
+                      [[x (dec y)] [x (inc y)] [(dec x) y] [(inc x) y]]) xs)
         new (filter
               (fn [[x y]] (is-good i x y))
-              (set/difference (set n) (set xs) ))
-        ]
+              (set/difference (set n) (set xs)))]
     (if (< 0 (count new))
-      (next-gen i (set/union xs new))
+      (recur i (set/union xs new))
       xs)))
 
-(deftest aoc-9
-  ;(let [i (read-input "9.txt")
-  ;      low (find-low i)]
-  ;  (prn (apply + (map inc low)))
-  ;  )
+(defn aoc-9 [i]
+  (let [low (find-low i)]
+    (apply *
+           (->> (map (fn [[x y]] (next-gen i [[x y]])) low)
+                (filter #(< 0 (count %)))
+                (map count)
+                sort
+                reverse
+                (take 3)))))
 
-  (let [i   (read-input "9.txt")
-        low (find-low i)]
-    (prn
-      (apply *
-             (->> (map (fn [[x y]] (next-gen i [[x y]] )) low)
-                  (filter #(< 0 (count %)))
-                  (map count)
-                  sort
-                  reverse
-                  (take 3)))
-      )
-
-    )
-
-  )
+(deftest aoc-9-test
+  (is (= 827904
+         (aoc-9 (read-input "9.txt")))))
