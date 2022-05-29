@@ -31,13 +31,13 @@
        (apply merge-with +)
        (merge-with + {last-letter 1})))
 
-(deftest aoc-14
+(defn calc-res [polymer-template gen-res]
+  (let [vs (vals (extract-occurrences gen-res (last polymer-template)))]
+    (- (apply max vs) (apply min vs))))
 
-  (let [[p m] (read-input "14.txt")
-        gen-res (generate p m 40)
-        _       (prn gen-res)
-        _       (prn :poly-length (apply + (map second gen-res)))
-        occ-res (extract-occurrences gen-res (last p))
-        vs      (vals occ-res)
-        _       (prn :result (- (apply max vs) (apply min vs)))
-        ]))
+(deftest aoc-14
+  (let [[p m] (read-input "14.txt")]
+    ; aoc-14-1
+    (is (= 2233 (calc-res p (generate p m 10))))
+    ; aoc-14-2
+    (is (= 2884513602164 (calc-res p (generate p m 40))))))
