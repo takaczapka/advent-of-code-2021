@@ -1,10 +1,7 @@
 (ns advent-of-code-2021.20
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.set :as set]
-            [clojure.pprint :refer [pprint]]
-            [clojure.zip :as zip]))
+            [clojure.string :as str]))
 
 (defn read-input [file]
   (let [[alg img]
@@ -14,8 +11,6 @@
           (str/split #"\n\n"))]
     [(str/join (str/split alg #"\n"))
      (mapv vec (str/split img #"\n"))]))
-
-
 
 (defn px [alg img [x y] default]
   (let [a   (get-in img [(dec y) (dec x)] default)
@@ -29,23 +24,15 @@
         i   (get-in img [(inc y) (inc x)] default)
         r   (str/join (map #(if (= % \.) \0 \1) (vector a b c d e f g h i)))
         res (Integer/parseInt r 2)
-        ;_ (prn :r r)
-        ;_ (prn :res res)
         ]
     (get alg res)))
 
 (defn translate [alg img default]
-  (prn :def default)
-  (let [res
-        (mapv (fn [y]
-                (mapv (fn [x]
-                        (px alg img [x y] default))
-                      (range -1 (+ (count (first img)) 1))))
-              (range -1 (+ (count img) 1)))]
-    res
-    )
-
-  )
+  (mapv (fn [y]
+          (mapv (fn [x]
+                  (px alg img [x y] default))
+                (range -1 (+ (count (first img)) 1))))
+        (range -1 (+ (count img) 1))))
 
 (defn steps [a i n]
   (->>
@@ -60,17 +47,9 @@
 
 (deftest aoc-20
   (let [[a i] (read-input "20.txt")]
-    ; 5425
 
-    (->>
-      ;(translate a (translate a i \.) \#)
-      (steps a i 50)
-
-      flatten
-      (filter #(= % \#))
-      count
-      pprint
-      )
-    )
-
-  )
+    (is (= 14052 (->>
+                   (steps a i 50)
+                   flatten
+                   (filter #(= % \#))
+                   count)))))
